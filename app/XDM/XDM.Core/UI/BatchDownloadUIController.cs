@@ -46,23 +46,34 @@ namespace XDM.Core.UI
 
         private void OnOKClicked()
         {
+            IEnumerable<Uri> urls;
+
             if (this.view.IsBatchMode)
             {
-                var links = GenerateBatchLink()?.Select(x => (IRequestData)new SingleSourceHTTPDownloadInfo { Uri = x.ToString() });
-                if (links == null || !links.Any())
+                urls = GenerateBatchLink();
+            }
+            else
+            {
+                if (!BatchLinkParser.TryParse(this.view.DownloadLinks, out var parsedLinks, out _))
                 {
-                    ApplicationContext.Application.ShowMessageBox(this.view, TextResource.GetText("BAT_SELECT_ITEMS"));
+                    ApplicationContext.Application.ShowMessageBox(this.view, TextResource.GetText("MSG_INVALID_URL"));
                     return;
                 }
-                this.view.DestroyWindow();
-                ApplicationContext.Application.ShowDownloadSelectionWindow(FileNameFetchMode.FileNameAndExtension, links);
-                //var dsvc = new DownloadSelectionViewController(this.view.CreateDownloadSelectionView(),
-                //    ApplicationContext.Core, AppUI, FileNameFetchMode.FileNameAndExtension, links);
-                //dsvc.Run();
-                //var window = new DownloadSelectionWindow(ApplicationContext.Core, AppUI, Core.Lib.Downloader.FileNameFetchMode.FileNameAndExtension, links);
-                //this.Close();
-                //window.Show();
+                urls = parsedLinks;
             }
+
+            var links = urls
+                .Select(x => (IRequestData)new SingleSourceHTTPDownloadInfo { Uri = x.ToString() })
+                .ToList();
+
+            if (links.Count == 0)
+            {
+                ApplicationContext.Application.ShowMessageBox(this.view, TextResource.GetText("BAT_SELECT_ITEMS"));
+                return;
+            }
+
+            this.view.DestroyWindow();
+            ApplicationContext.Application.ShowDownloadSelectionWindow(FileNameFetchMode.FileNameAndExtension, links);
         }
 
         private void OnBatchPatternChange()
