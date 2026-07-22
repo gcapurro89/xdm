@@ -30,6 +30,7 @@ namespace XDM.GtkUI.Dialogs.BatchWindow
         public string BatchAddress2 { get => TxtFile2.Text; set => TxtFile2.Text = value; }
         public string BatchAddressN { get => TxtFileN.Text; set => TxtFileN.Text = value; }
         public bool IsBatchMode => this.TabControl.CurrentPage == 0;
+        public string DownloadLinks { get => TxtDownloadLinks.Buffer.Text; set => TxtDownloadLinks.Buffer.Text = value; }
 
         public event EventHandler? PatternChanged;
         public event EventHandler? OkClicked;
@@ -84,6 +85,7 @@ namespace XDM.GtkUI.Dialogs.BatchWindow
         [UI] private Entry TxtFile2;
         [UI] private Entry TxtFileN;
         [UI] private Entry TxtLeadingZero;
+        [UI] private TextView TxtDownloadLinks;
         [UI] private Notebook TabControl;
 
         private BatchDownloadWindow(Builder builder, Window parent) : base(builder.GetRawOwnedObject("window"))
