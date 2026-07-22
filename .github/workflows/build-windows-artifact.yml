@@ -1,0 +1,57 @@
+name: Build Windows artifact
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master, main ]
+    paths:
+      - "app/XDM/**"
+      - ".github/workflows/build-windows-artifact.yml"
+  pull_request:
+    paths:
+      - "app/XDM/**"
+      - ".github/workflows/build-windows-artifact.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install .NET 6 SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 6.0.428
+
+      - name: Restore parser tests
+        run: dotnet restore app/XDM/XDM.Tests/XDM.Tests.csproj
+
+      - name: Run parser tests
+        run: dotnet test app/XDM/XDM.Tests/XDM.Tests.csproj --configuration Release --no-restore
+
+      - name: Restore Windows application
+        run: dotnet restore app/XDM/XDM.Wpf.UI/XDM.Wpf.UI.csproj -p:Platform=x86
+
+      - name: Build Windows application
+        run: dotnet build app/XDM/XDM.Wpf.UI/XDM.Wpf.UI.csproj --configuration Release -p:Platform=x86 --no-restore
+
+      - name: Collect application files
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem "app/XDM/XDM.Wpf.UI/bin" -Filter "xdm-app.exe" -Recurse | Select-Object -First 1
+          if (-not $exe) { throw "xdm-app.exe non trovato dopo la build" }
+          New-Item -ItemType Directory -Path "artifact" -Force | Out-Null
+          Copy-Item (Join-Path $exe.Directory.FullName "*") "artifact" -Recurse -Force
+
+      - name: Upload xdm-app build
+        uses: actions/upload-artifact@v7
+        with:
+          name: xdm-windows-batch-fix
+          path: artifact/**
+          if-no-files-found: error
+          retention-days: 14
